@@ -81,7 +81,20 @@ cp config.example.json config.json
 
 ## 使用方法
 
-### 交互式运行
+### 图形界面（推荐）
+
+```bash
+python gui.py
+```
+
+启动 Gemini 风格的深色主题 GUI，支持：
+- 粘贴 Bilibili / YouTube 链接或浏览本地视频
+- 多选提示词（评估、总结、格式化等）
+- 切换 Whisper 模型大小
+- 实时日志输出 + 大模型流式进度显示
+- 设置界面直接修改 API Key / Base URL / 模型名称
+
+### 命令行交互式运行
 
 ```bash
 python transcribe.py
@@ -160,6 +173,7 @@ python transcribe.py --list-prompts
 ```
 video-transcribe-ai/
 ├── transcribe.py           # 交互式/单视频处理脚本
+├── gui.py                  # 图形界面（Gemini 风格深色主题）
 ├── config.json             # 配置文件（需自行创建）
 ├── config.example.json     # 配置文件示例
 ├── requirements.txt        # Python 依赖
@@ -252,7 +266,14 @@ MIT License
 
 ## 更新日志
 
-### v1.2.0 (最新)
+### v1.3.0 (最新)
+- ✨ 新增 Gemini 风格图形界面 (`gui.py`)
+- 支持在 GUI 中粘贴链接或浏览本地文件
+- 大模型回复流式实时显示
+- 日志分级着色（仅错误显示红色）
+- 内置设置界面，可直接修改 API Key / 模型名称
+
+### v1.2.0
 - ✨ 新增本地视频文件处理功能
 - 支持多种视频格式（mp4, avi, mkv, mov, flv, wmv, webm, m4v）
 - 使用 FFmpeg 自动提取音频

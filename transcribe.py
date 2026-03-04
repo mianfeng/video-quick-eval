@@ -171,6 +171,7 @@ def download_audio(video_url: str) -> tuple[str, str]:
         'noplaylist': True,
         'quiet': True,
         'no_warnings': True,
+        'ffmpeg_location': r'D:\ffmpeg-master-latest-win64-gpl-shared\bin',
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -330,8 +331,21 @@ def optimize_text_with_llm(text: str, config: dict, prompt_name: str = "evaluati
         logger.error(f"文本优化失败: {e}")
         return None
 
+# 全局流式回调：GUI 可注入，用于实时显示 LLM 生成进度
+_llm_stream_callback = None
+
+def set_llm_stream_callback(cb):
+    """注入流式进度回调，cb(chars_received: int, latest_chunk: str)"""
+    global _llm_stream_callback
+    _llm_stream_callback = cb
+
+def clear_llm_stream_callback():
+    global _llm_stream_callback
+    _llm_stream_callback = None
+
+
 def _optimize_with_openai(text: str, config: dict, prompt_name: str) -> str:
-    """使用 OpenAI API 优化文本"""
+    """使用 OpenAI API 优化文本（支持流式输出进度回调）"""
     try:
         from openai import OpenAI
     except ImportError:
@@ -350,39 +364,47 @@ def _optimize_with_openai(text: str, config: dict, prompt_name: str) -> str:
     prompt = prompt_template.format(transcript_text=text)
 
     try:
+        use_stream = _llm_stream_callback is not None
         response = client.chat.completions.create(
             model=config.get('model', 'gpt-4o-mini'),
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
+            messages=[{"role": "user", "content": prompt}],
             temperature=config.get('temperature', 0.3),
-            max_tokens=config.get('max_tokens', 4000)
+            max_tokens=config.get('max_tokens', 4000),
+            stream=use_stream
         )
 
-        # 处理不同的响应格式
-        if hasattr(response, 'choices'):
-            optimized_text = response.choices[0].message.content
-        elif isinstance(response, dict):
-            optimized_text = response.get('choices', [{}])[0].get('message', {}).get('content', '')
-        elif isinstance(response, str):
-            if response.strip().startswith('<!doctype') or response.strip().startswith('<html'):
-                logger.error("API 返回了 HTML 页面而不是 JSON 响应")
-                return None
-            optimized_text = response
+        if use_stream:
+            # 流式：逐 chunk 拼接并回调进度
+            optimized_text = ""
+            for chunk in response:
+                delta = chunk.choices[0].delta.content if chunk.choices else None
+                if delta:
+                    optimized_text += delta
+                    try:
+                        _llm_stream_callback(len(optimized_text), delta)
+                    except Exception:
+                        pass
         else:
-            logger.error(f"未知的响应格式: {type(response)}")
-            return None
+            if hasattr(response, 'choices'):
+                optimized_text = response.choices[0].message.content
+            elif isinstance(response, dict):
+                optimized_text = response.get('choices', [{}])[0].get('message', {}).get('content', '')
+            elif isinstance(response, str):
+                optimized_text = response
+            else:
+                logger.error(f"未知的响应格式: {type(response)}")
+                return None
 
         if not optimized_text:
             logger.error("API 返回空内容")
             return None
 
-        if optimized_text.strip().startswith('<!doctype') or optimized_text.strip().startswith('<html'):
+        if optimized_text.strip().startswith(('<!doctype', '<html')):
             logger.error("API 返回了 HTML 页面而不是文本内容")
             return None
 
         elapsed = time.time() - start_time
-        logger.info(f"文本优化完成 (耗时: {format_time(elapsed)})")
+        logger.info(f"文本优化完成，共 {len(optimized_text)} 字符 (耗时: {format_time(elapsed)})")
         return optimized_text
 
     except Exception as e:

@@ -95,6 +95,7 @@ class BilibiliDownloader(Downloader):
             ],
             'noplaylist': True,
             'quiet': False,
+            'ffmpeg_location': r'D:\ffmpeg-master-latest-win64-gpl-shared\bin',
         }
 
         logger.info(f"开始下载 Bilibili 音频: {video_url}")
@@ -144,6 +145,7 @@ class BilibiliDownloader(Downloader):
             'noplaylist': True,
             'quiet': False,
             'merge_output_format': 'mp4',
+            'ffmpeg_location': r'D:\ffmpeg-master-latest-win64-gpl-shared\bin',
         }
 
         logger.info(f"开始下载 Bilibili 视频: {video_url}")
@@ -192,6 +194,7 @@ class YoutubeDownloader(Downloader):
             ],
             'noplaylist': True,
             'quiet': False,
+            'ffmpeg_location': r'D:\ffmpeg-master-latest-win64-gpl-shared\bin',
         }
 
         logger.info(f"开始下载 YouTube 音频: {video_url}")
@@ -240,6 +243,7 @@ class YoutubeDownloader(Downloader):
             'noplaylist': True,
             'quiet': False,
             'merge_output_format': 'mp4',
+            'ffmpeg_location': r'D:\ffmpeg-master-latest-win64-gpl-shared\bin',
         }
 
         logger.info(f"开始下载 YouTube 视频: {video_url}")
